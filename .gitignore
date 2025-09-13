@@ -1,0 +1,17 @@
+# MacOS
+.DS_Store
+
+# binary files
+*.bin
+*.exe
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.gif
+*.ico
+*.db
+*.sql
+*.sqlite
+*.sqlite3
+
