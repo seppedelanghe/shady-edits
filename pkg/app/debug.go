@@ -11,16 +11,15 @@ type DebugApp struct {
 	Pipeline *Pipeline
 	Config   *Config
 
-	lastLoss        float64
-	sameLossCounter int
+	suspended bool
 }
 
 func NewDebugApp(config *Config) DebugApp {
 	pipeline := NewDefaultPipeline()
 	ebiten.SetWindowSize(config.W*3, config.H)
-	ebiten.SetTPS(30)
+	ebiten.SetTPS(120)
 
-	return DebugApp{pipeline, config, 9e9, 0}
+	return DebugApp{pipeline, config, false}
 }
 
 func (dw *DebugApp) Update() error {
@@ -28,25 +27,22 @@ func (dw *DebugApp) Update() error {
 		return ebiten.Termination
 	}
 
+	if dw.suspended {
+		return nil
+	}
+
 	candidate := dw.Config.Tuner.Candidate()
 	dw.Config.Result = dw.Pipeline.Run(dw.Config.Original, candidate)
 	loss := dw.Config.Loss(dw.Config.Target, dw.Config.Result)
+	// fmt.Printf("Loss: %.4f\n", loss)
 
-	fmt.Printf("candidate: %v\n", candidate)
-	fmt.Printf("Loss: %.4f\n", loss)
-	if dw.lastLoss == loss {
-		dw.sameLossCounter += 1
-	} else {
-		dw.lastLoss = loss
-		dw.sameLossCounter = 0
+	if dw.Config.Tuner.Update(loss) {
+		params := dw.Config.Tuner.Params()
+		dw.Config.Result = dw.Pipeline.Run(dw.Config.Original, params)
+		loss := dw.Config.Loss(dw.Config.Target, dw.Config.Result)
+		fmt.Printf("Found best parameters:\n\t%v\n\tLoss: %.4f", params, loss)
+		dw.suspended = true
 	}
-
-	if dw.sameLossCounter == 10 {
-		fmt.Printf("Found optimal params:\n%v", dw.Config.Tuner.Params())
-		return ebiten.Termination
-	}
-
-	dw.Config.Tuner.Update(loss)
 
 	return nil
 }

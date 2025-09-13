@@ -34,12 +34,12 @@ func NewConfigFromPaths(originalPath, targetPath string) (*Config, error) {
 	h := target.Bounds().Dy()
 	result := ebiten.NewImage(w, h)
 
-	tuner := tuning.NewCoordinateSearch(0.0215, map[string]float32{
-		"Alpha":         0.5,
-		"AlphaBlend":    1,
-		"Contrast":      1,
+	tuner := tuning.NewRandomGeneticEvolve(map[string]float32{
+		// "Alpha":         0.5,
+		// "AlphaBlend":    1,
+		"Contrast":      0,
 		"ContrastBlend": 1,
-	})
+	}, 100, 40)
 
-	return &Config{original, target, result, loss.L1Loss, tuner, w, h}, nil
+	return &Config{original, target, result, loss.L1LossLinearRGB, tuner, w, h}, nil
 }
