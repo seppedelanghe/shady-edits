@@ -58,7 +58,7 @@ func NewConfigFromPaths(originalPath, targetPath string) (*Config, error) {
 		}},
 	}
 
-	tuner := tuning.NewRandomGeneticEvolve(initialOptions, 5, 20)
+	tuner := tuning.NewRandomGeneticEvolve(initialOptions, 40, 200)
 
 	// tuner := tuning.NewRandomSearch(initialOptions, 1000)
 

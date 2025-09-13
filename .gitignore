@@ -15,3 +15,5 @@
 *.sqlite
 *.sqlite3
 
+# excludes
+!demo.gif

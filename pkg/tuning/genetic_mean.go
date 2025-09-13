@@ -50,7 +50,7 @@ func (rs *RandomGeneticEvolve) bestCandidate() []nodes.NodeOptions {
 
 func (rs *RandomGeneticEvolve) mutationFactor() float32 {
 	var sigma0 float32 = 0.75
-	var sigmaMin float32 = 0.005
+	var sigmaMin float32 = 0.0001
 	tua := float64(rs.generations) / 2.4
 	s := sigma0 * float32(math.Exp(-float64(rs.generation)/tua))
 	return max(s, sigmaMin) * float32(rs.r.NormFloat64())
