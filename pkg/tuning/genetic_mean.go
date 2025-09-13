@@ -1,10 +1,10 @@
 package tuning
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"shady-edits/pkg/nodes"
+	"shady-edits/pkg/utils"
 )
 
 type RandomGeneticEvolve struct {
@@ -18,7 +18,8 @@ type RandomGeneticEvolve struct {
 	populations int
 	generations int
 
-	r *rand.Rand
+	r  *rand.Rand
+	pb utils.ProgressBar
 }
 
 func NewRandomGeneticEvolve(initialParams []nodes.NodeOptions, populations, generations int) *RandomGeneticEvolve {
@@ -28,7 +29,8 @@ func NewRandomGeneticEvolve(initialParams []nodes.NodeOptions, populations, gene
 	r := rand.New(rand.NewSource(420))
 	params := randomOptions(initialParams, r)
 
-	tuner := RandomGeneticEvolve{params, candidates, candidatesLoss, 0, 1, populations, generations, r}
+	pb := utils.NewDefaultProgressBar("Generations", generations, 50)
+	tuner := RandomGeneticEvolve{params, candidates, candidatesLoss, 0, 1, populations, generations, r, pb}
 	tuner.generateNewCadidates(initialParams)
 
 	return &tuner
@@ -112,12 +114,13 @@ func (rs *RandomGeneticEvolve) Update(loss float64) bool {
 				Params:  nodeOpts.Params,
 			}
 		}
+		rs.pb.Step()
 		return true
 	}
 
 	rs.iteration = 0
 	rs.generation++
-	fmt.Printf("Starting generation %d\n", rs.generation)
+	rs.pb.Step()
 
 	best := rs.bestCandidate()
 	rs.generateNewCadidates(best)
