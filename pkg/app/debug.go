@@ -40,7 +40,7 @@ func (dw *DebugApp) Update() error {
 		nodeOptions := dw.Config.Tuner.NodeOptions()
 		dw.Config.Result = dw.Pipeline.Run(dw.Config.Original, nodeOptions)
 		loss := dw.Config.Loss(dw.Config.Target, dw.Config.Result)
-		fmt.Printf("Found best parameters:\n\t%v\n\tLoss: %.4f", nodeOptions, loss)
+		fmt.Printf("Found best parameters:\n%v\nLoss: %.4f\n", nodeOptions, loss)
 		dw.suspended = true
 	}
 
