@@ -2,23 +2,15 @@ package tuning
 
 import (
 	"fmt"
-	"maps"
 	"math"
 	"math/rand"
+	"shady-edits/pkg/nodes"
 )
 
-func randomParams(params map[string]float32, r *rand.Rand) map[string]float32 {
-	candidate := make(map[string]float32)
-	for k := range params {
-		candidate[k] = r.Float32()
-	}
-	return candidate
-}
-
 type RandomGeneticEvolve struct {
-	params map[string]float32
+	nodeOpts []nodes.NodeOptions
 
-	candidates     []map[string]float32
+	candidates     [][]nodes.NodeOptions
 	candidatesLoss []float64
 	iteration      int
 	generation     int
@@ -29,12 +21,12 @@ type RandomGeneticEvolve struct {
 	r *rand.Rand
 }
 
-func NewRandomGeneticEvolve(initialParams map[string]float32, populations, generations int) *RandomGeneticEvolve {
-	candidates := make([]map[string]float32, populations)
+func NewRandomGeneticEvolve(initialParams []nodes.NodeOptions, populations, generations int) *RandomGeneticEvolve {
+	candidates := make([][]nodes.NodeOptions, populations)
 	candidatesLoss := make([]float64, populations)
 
 	r := rand.New(rand.NewSource(420))
-	params := randomParams(initialParams, r)
+	params := randomOptions(initialParams, r)
 
 	tuner := RandomGeneticEvolve{params, candidates, candidatesLoss, 0, 1, populations, generations, r}
 	tuner.generateNewCadidates(initialParams)
@@ -42,7 +34,7 @@ func NewRandomGeneticEvolve(initialParams map[string]float32, populations, gener
 	return &tuner
 }
 
-func (rs *RandomGeneticEvolve) bestCandidate() map[string]float32 {
+func (rs *RandomGeneticEvolve) bestCandidate() []nodes.NodeOptions {
 	var index int
 	var bestLoss float64 = math.Inf(1)
 	for i, loss := range rs.candidatesLoss {
@@ -62,15 +54,44 @@ func (rs *RandomGeneticEvolve) mutationFactor() float32 {
 	return max(s, sigmaMin) * float32(rs.r.NormFloat64())
 }
 
-func (rs *RandomGeneticEvolve) generateNewCadidates(parent map[string]float32) {
+func (rs *RandomGeneticEvolve) generateNewCadidates(parent []nodes.NodeOptions) {
 	for i := range rs.populations {
 		if rs.candidates[i] == nil {
-			rs.candidates[i] = make(map[string]float32)
+			rs.candidates[i] = make([]nodes.NodeOptions, len(parent))
 		}
 
-		for k, v := range parent {
-			m := rs.mutationFactor()
-			rs.candidates[i][k] = min(max(v+m, -1), 1)
+		var m float32
+
+		for j, opts := range parent {
+			params := make([]nodes.NodeParam, 0)
+
+			enabled := opts.Enabled
+			if rs.r.Float32() < float32(math.Abs(float64(rs.mutationFactor()))) {
+				enabled = !enabled
+			}
+
+			for _, param := range opts.Params {
+
+				pEnabled := param.Enabled
+				if rs.r.Float32() < float32(math.Abs(float64(rs.mutationFactor()))) {
+					pEnabled = !pEnabled
+				}
+
+				m = rs.mutationFactor()
+				v := min(max(param.Value+m, -1), 1)
+
+				params = append(params, nodes.NodeParam{
+					Enabled: pEnabled,
+					Name:    param.Name,
+					Value:   v,
+				})
+			}
+
+			rs.candidates[i][j] = nodes.NodeOptions{
+				Name:    opts.Name,
+				Enabled: enabled,
+				Params:  params,
+			}
 		}
 	}
 }
@@ -84,7 +105,13 @@ func (rs *RandomGeneticEvolve) Update(loss float64) bool {
 	}
 
 	if rs.generation == rs.generations {
-		maps.Copy(rs.params, rs.bestCandidate())
+		for i, nodeOpts := range rs.bestCandidate() {
+			rs.nodeOpts[i] = nodes.NodeOptions{
+				Name:    nodeOpts.Name,
+				Enabled: nodeOpts.Enabled,
+				Params:  nodeOpts.Params,
+			}
+		}
 		return true
 	}
 
@@ -98,10 +125,10 @@ func (rs *RandomGeneticEvolve) Update(loss float64) bool {
 	return false
 }
 
-func (rs *RandomGeneticEvolve) Params() map[string]float32 {
-	return rs.params
+func (rs *RandomGeneticEvolve) NodeOptions() []nodes.NodeOptions {
+	return rs.nodeOpts
 }
 
-func (rs *RandomGeneticEvolve) Candidate() map[string]float32 {
+func (rs *RandomGeneticEvolve) Candidate() []nodes.NodeOptions {
 	return rs.candidates[rs.iteration]
 }

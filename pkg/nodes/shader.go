@@ -17,10 +17,12 @@ func NewShaderNode(shaderCode []byte) *ShaderNode {
 	return &ShaderNode{shader}
 }
 
-func (n *ShaderNode) Run(src, dst *ebiten.Image, opts map[string]float32) {
+func (n *ShaderNode) Run(src, dst *ebiten.Image, opts NodeOptions) {
 	uniforms := make(map[string]any)
-	for k, v := range opts {
-		uniforms[k] = v
+	for _, param := range opts.Params {
+		if param.Enabled {
+			uniforms[param.Name] = param.Value
+		}
 	}
 
 	shaderOpts := ebiten.DrawRectShaderOptions{}
